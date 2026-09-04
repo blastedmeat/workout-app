@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// Lift tracker — Firestore rules
+//
+// This is a single-user app holding personal training data. That makes the
+// security question different from the picks pool, where wide-open reads were
+// required for the Board to work at all.
+//
+// Read the note at the bottom before deciding this is finished.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /sessions/{id} {
+      allow read: if true;
+
+      // Shape checks. These don't stop anyone writing — they stop malformed
+      // writes from corrupting the log and breaking the progression logic,
+      // which reads every past session.
+      allow create, update: if
+        request.resource.data.date is string &&
+        request.resource.data.day is string &&
+        request.resource.data.entries is map;
+
+      allow delete: if true;
+    }
+
+    // Nothing else in this database.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------
+// THE HONEST VERSION
+//
+// The PASSCODE in index.html is cosmetic. It's a JavaScript string in a file
+// anyone can view, and these rules allow reads from anyone who knows the
+// Firestore project id. For the picks pool that was an acceptable trade —
+// four family members, and the alternative broke the Board. Here it buys you
+// nothing, because there's exactly one user.
+//
+// So this is the app where turning on real auth is actually worth it, and
+// it's about fifteen minutes:
+//
+// 1. Firebase console -> Authentication -> Get started -> Email/Password.
+// 2. Add one user: your email and a password.
+// 3. In index.html, import getAuth and signInWithEmailAndPassword from
+//    firebase-auth.js, and replace the PASSCODE check in unlock() with a
+//    real sign-in call.
+// 4. Replace the sessions block above with:
+//
+//      match /sessions/{id} {
+//        allow read, write: if request.auth != null;
+//      }
+//
+// After that your training log is genuinely private rather than obscure.
+//
+// Ship the version above today if you'd rather start lifting than configure
+// auth. Just don't mistake the passcode for a lock.
+// ---------------------------------------------------------------------
