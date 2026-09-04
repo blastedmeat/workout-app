@@ -116,7 +116,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = initializeFirestore(fbApp,{ experimentalForceLongPolling:true });
 const SESSIONS = collection(db,"sessions");
 
-const PASSCODE = "abc123";   // change this
+const PASSCODE = "lift";   // change this
 
 /* ============================================================
    PROGRAM — static. Lives in code, not the database.
@@ -276,7 +276,9 @@ function lastFor(exId){
 }
 function target(exId){
   const e = EX[exId], prev = lastFor(exId);
-  if(!prev) return { weight:null, reps:e.lo, note:"First time — pick a weight you could do a couple more reps with." };
+  if(!prev) return { weight:null, reps:e.lo,
+    note: e.bw ? "First time — do what you can with good form and stop before the reps get ugly."
+               : "First time — pick a weight you could do a couple more reps with." };
 
   const rel = e.uni ? prev.filter(s=>s.side==="R") : prev;
   if(!rel.length) return { weight:null, reps:e.lo, note:"No right-side data yet." };
