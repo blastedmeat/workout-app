@@ -142,11 +142,11 @@ const EX = {
     miss:"Hips sagging or head craning forward. If reps get ugly, stop the set.",
     vid:"proper push up form" },
 
-  curl:{ n:"DB Curl", uni:true, sets:2, extraRight:true, lo:10, hi:15,
-    setup:"Standing, one dumbbell, arm hanging at your side, palm forward.",
-    focus:["Keep your elbow pinned at your side — it shouldn't drift forward.","Lower slowly, about three seconds. The lowering builds more than the lifting.","Full stretch at the bottom. Don't stop halfway down."],
+  curl:{ n:"DB Curl (rotating)", uni:true, sets:2, extraRight:true, lo:10, hi:15,
+    setup:"Standing, one dumbbell, arm hanging at your side. Start in a hammer grip — palm facing your thigh.",
+    focus:["Rotate to palm-up as you curl past your thigh. Starting neutral keeps the Bowflex plates clear of your forearm.","Keep your elbow pinned at your side — it shouldn't drift forward.","Lower slowly, about three seconds, rotating back to neutral on the way down."],
     miss:"Swinging the weight up with the back. If your torso moves, go lighter.",
-    vid:"dumbbell biceps curl form" },
+    vid:"rotating dumbbell curl supination form" },
 
   tri:{ n:"Overhead Triceps Extension", uni:false, sets:2, lo:10, hi:15,
     setup:"Seated or standing, both hands cupping one dumbbell, held overhead with arms straight.",
@@ -166,7 +166,7 @@ const EX = {
     miss:"Turning it into a squat. Your knees should barely move; the motion is hips going back.",
     vid:"dumbbell romanian deadlift form" },
 
-  bss:{ n:"Bulgarian Split Squat", uni:true, sets:3, lo:8, hi:12,
+  bss:{ n:"Bulgarian Split Squat", uni:true, lead:"L", sets:3, lo:8, hi:12,
     setup:"Stand a couple of feet in front of the bench, rear foot laced up on it behind you. Dumbbells at your sides.",
     focus:["Most of your weight is on the front leg. The back leg is balance, not power.","Drop straight down. Front shin stays close to vertical.","Find your foot distance first with no weight — too close hits quads, too far hits glutes."],
     miss:"Standing too close to the bench, which jams the front knee. Move your front foot further forward.",
@@ -232,6 +232,18 @@ const EX = {
     miss:"Cutting the bottom of the range short. The stretched position is where this exercise earns its keep.",
     vid:"incline dumbbell curl form" },
 
+  fly:{ n:"Single-Arm DB Fly", uni:true, sets:3, extraRight:true, lo:10, hi:15,
+    setup:"Flat or slightly inclined bench, one dumbbell. Arm out to the side with a soft elbow bend you hold fixed. Free hand resting on the opposite side of your chest.",
+    focus:["Finish each rep across your body, toward the opposite shoulder — not straight up. That cross-body travel is what loads the fibres near the breastbone.","The elbow angle never changes. If it opens and closes, you're pressing, not flying.","Rest your free hand on your right pec and feel it contract. When a muscle is underdeveloped, learning to feel it working is most of the job."],
+    miss:"Going too heavy. A fly is a long lever — 15–25 lb is a genuine working set here, and heavier turns it into a sloppy press.",
+    vid:"single arm dumbbell chest fly form" },
+
+  pullover:{ n:"DB Pullover", uni:false, sets:3, lo:10, hi:15,
+    setup:"Lie flat, both hands cupping one dumbbell, arms nearly straight above your chest.",
+    focus:["Lower the weight back behind your head until you feel a deep stretch across the chest and lats.","Keep a slight fixed bend in the elbows and your ribs down.","Slow on the way back. The stretch at the bottom is the whole exercise."],
+    miss:"Arching the lower back to get more range. The range should come from the shoulders, not the spine.",
+    vid:"dumbbell pullover form" },
+
   skull:{ n:"DB Skull Crusher", uni:false, sets:3, lo:10, hi:15,
     setup:"Lie flat, dumbbells held above your chest, palms facing each other.",
     focus:["Bend only at the elbow, lowering the weights beside your head.","Upper arms stay still, angled slightly back rather than straight up.","Control the lowering. This is a joint-sensitive movement — no bouncing."],
@@ -240,10 +252,10 @@ const EX = {
 };
 
 const DAYS = [
-  { id:"1", n:"Upper — Horizontal", ex:["obench","orow","pushup","curl","tri"] },
+  { id:"1", n:"Upper — Horizontal", ex:["obench","orow","fly","pushup","curl","tri"] },
   { id:"2", n:"Lower",              ex:["goblet","rdl","bss","calf"] },
-  { id:"3", n:"Upper — Vertical",   ex:["pullup","ohp","brow","lat","hammer"] },
-  { id:"4", n:"Upper — Arms & Shoulders", ex:["incline","csrow","rear","icurl","skull"] }
+  { id:"3", n:"Upper — Vertical",   ex:["pullup","ohp","brow","pullover","lat","hammer"] },
+  { id:"4", n:"Upper — Arms & Shoulders", ex:["incline","fly","csrow","rear","icurl","skull"] }
 ];
 
 /* ============================================================
@@ -280,8 +292,10 @@ function target(exId){
     note: e.bw ? "First time — do what you can with good form and stop before the reps get ugly."
                : "First time — pick a weight you could do a couple more reps with." };
 
-  const rel = e.uni ? prev.filter(s=>s.side==="R") : prev;
-  if(!rel.length) return { weight:null, reps:e.lo, note:"No right-side data yet." };
+  const lead = e.lead || "R";
+  const rel = e.uni ? prev.filter(s=>s.side===lead) : prev;
+  if(!rel.length) return { weight:null, reps:e.lo,
+    note:`No ${lead==="R"?"right":"left"}-side data yet.` };
 
   const w = Math.max(...rel.map(s=>Number(s.weight)||0));
   const atTop = rel.every(s=>Number(s.reps) >= e.hi);
@@ -293,7 +307,9 @@ function target(exId){
   }
   // Not every set reached the top yet — the job is to bring the lagging set up.
   const low = Math.min(...rel.map(s=>Number(s.reps)||0));
-  return { weight: e.bw?null:w, reps:e.hi,
+  if(e.bw) return { weight:null, reps:e.hi,
+    note:`Your weakest set was ${low}. Even the sets out at ${e.hi} before pushing past it.` };
+  return { weight:w, reps:e.hi,
     note:`Your weakest set was ${low}. Get every set to ${e.hi} and the weight goes up.` };
 }
 
@@ -321,7 +337,7 @@ function renderLock(){
 }
 
 function renderNav(){
-  const items=[["today","Today","▲"],["progress","Progress","◆"],["gap","L/R Gap","◑"],["history","History","≡"]];
+  const items=[["today","Today","▲"],["progress","Progress","◆"],["gap","Gap Test","◑"],["history","History","≡"]];
   document.getElementById("nav").innerHTML = items.map(([k,l,i])=>
     `<button class="${tab===k?"on":""}" onclick="go('${k}')">
       <span class="ic">${i}</span>${l}</button>`).join("");
@@ -358,12 +374,15 @@ function renderToday(){
 function renderEx(exId){
   const e = EX[exId], t = target(exId), got = draft[exId]||[];
   const prev = lastFor(exId);
-  const sides = e.uni ? ["R","L"] : ["-"];
-  const nSets = s => (s==="R" && e.extraRight) ? e.sets+1 : e.sets;
+  const lead = e.lead || "R";
+  const other = lead==="R" ? "L" : "R";
+  const sides = e.uni ? [lead, other] : ["-"];
+  const nSets = s => (s===lead && e.extraRight) ? e.sets+1 : e.sets;
+  const sideName = s => s==="R" ? "Right" : "Left";
 
   const prevTxt = prev
     ? (e.uni
-        ? `Last: R ${prev.filter(s=>s.side==="R").map(s=>`${s.weight}×${s.reps}`).join(", ")}`
+        ? `Last: ${lead} ${prev.filter(s=>s.side===lead).map(s=>`${s.weight}×${s.reps}`).join(", ")}`
         : `Last: ${prev.map(s=>`${s.weight||"BW"}×${s.reps}`).join(", ")}`)
     : "No history yet";
 
@@ -372,7 +391,7 @@ function renderEx(exId){
       <div class="grow">
         <div class="ex-nm">${esc(e.n)}</div>
         <div class="tiny muted">${e.sets}${e.extraRight?"+1 right":""} × ${e.lo}–${e.hi}
-          ${e.uni?`<span class="pill uni">Right leads</span>`:""}</div>
+          ${e.uni?`<span class="pill uni">${sideName(lead)} leads</span>`:""}</div>
       </div>
       <button class="sm ghost" onclick="toggleInfo('${exId}')">${openInfo[exId]?"Hide":"How?"}</button>
     </div>
@@ -395,11 +414,12 @@ function renderEx(exId){
 
     ${sides.map(side=>`
       ${e.uni?`<div class="tiny muted" style="padding:6px 14px 0;font-weight:600">
-        ${side==="R"?"Right (lead)":"Left — match the right"}</div>`:""}
+        ${side===lead?`${sideName(side)} (lead — weaker side)`
+                     :`${sideName(side)} — match the ${sideName(lead).toLowerCase()}`}</div>`:""}
       ${Array.from({length:nSets(side)},(_,i)=>{
         const done = got.find(g=>g.side===side && g.set===i);
         if(done) return `<div class="setrow"><span class="setlbl">Set ${i+1}</span>
-          <span class="chip ${side==="R"?"r":side==="L"?"l":""}">${done.weight||"BW"} lb × ${done.reps}</span>
+          <span class="chip ${side===lead?"r":side===other?"l":""}">${done.weight||"BW"} lb × ${done.reps}</span>
           <button class="sm ghost" onclick="undoSet('${exId}','${side}',${i})">Undo</button></div>`;
         return `<div class="setrow">
           <span class="setlbl">Set ${i+1}</span>
@@ -419,7 +439,7 @@ function renderProgress(){
   const rows = Object.keys(EX).map(id=>{
     const hist = sessions.filter(s=>s.entries&&s.entries[id]).slice(0,8).reverse();
     if(!hist.length) return null;
-    const top = h => { const r = EX[id].uni ? h.entries[id].filter(x=>x.side==="R") : h.entries[id];
+    const top = h => { const r = EX[id].uni ? h.entries[id].filter(x=>x.side===(EX[id].lead||"R")) : h.entries[id];
       return Math.max(...r.map(x=>Number(x.weight)||0)); };
     const first = top(hist[0]), last = top(hist[hist.length-1]);
     return `<tr><td>${esc(EX[id].n)}</td>
@@ -430,43 +450,121 @@ function renderProgress(){
   }).filter(Boolean).join("");
 
   return `<h1>Progress</h1><p class="tiny muted">Working weight, first logged session to most recent.
-    ${EX.obench.uni?"Unilateral lifts show the right side.":""}</p>
+    Unilateral lifts show the lead (weaker) side.</p>
     <div class="card">${rows?`<table><thead><tr><th>Exercise</th>
       <th class="num">Start</th><th class="num">Now</th><th class="num">+</th></tr></thead>
       <tbody>${rows}</tbody></table>`:`<p class="muted">Log a few sessions and this fills in.</p>`}</div>`;
 }
 
+/* ============================================================
+   GAP TEST
+   Training deliberately hides the gap: same weight both sides, strong side
+   matched to the weak one. So the gap is measured separately, every 4–6
+   weeks: same weight, each side to technical failure, count the reps.
+   Tests are stored in the sessions collection with day:"gap" and an empty
+   entries map, which keeps them out of the auto-target and progress math
+   and needs no rules change.
+   ============================================================ */
+const GAP_SUGGEST = ["obench","curl"];   // right pec, right biceps
+let gapEx = "obench";
+
+const gapTests = () => sessions.filter(s=>s.day==="gap" && s.gap)
+  .sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+
 function renderGap(){
   const uni = Object.keys(EX).filter(id=>EX[id].uni);
-  const rows = uni.map(id=>{
-    const prev = lastFor(id); if(!prev) return null;
-    const r = prev.filter(s=>s.side==="R"), l = prev.filter(s=>s.side==="L");
-    if(!r.length||!l.length) return null;
-    const vol = a => a.reduce((t,s)=>t+(Number(s.weight)||0)*(Number(s.reps)||0),0);
-    const vr = vol(r), vl = vol(l);
-    if(!vl) return null;
-    const pct = Math.round(vr/vl*100);
-    return `<div style="margin-bottom:14px">
-      <div class="between"><span>${esc(EX[id].n)}</span>
-        <span class="mono ${pct>=97?"":""}" style="color:${pct>=97?"var(--good)":"var(--acc)"}">${pct}%</span></div>
-      <div class="bar"><i style="width:${Math.min(pct,100)}%"></i></div>
-      <div class="tiny muted">Right is ${pct}% of left by volume this session</div></div>`;
-  }).filter(Boolean).join("");
+  const nm = s => s==="R" ? "Right" : "Left";
+  const e = EX[gapEx], lead = e.lead||"R", other = lead==="R"?"L":"R";
+  const prevForEx = gapTests().filter(t=>t.gap.ex===gapEx);
+  const lastW = prevForEx.length ? prevForEx[prevForEx.length-1].gap.weight : "";
 
-  return `<h1>Left / Right Gap</h1>
-    <p class="tiny muted">Right-side volume as a share of left, from your most recent session on each lift.
-      100% means even. This is the number to watch.</p>
-    <div class="card">${rows||`<p class="muted">Log some unilateral work and this fills in.</p>`}</div>
-    <div class="card"><h3>Reading this</h3>
-      <p class="tiny muted" style="margin:0">Because you match your left to your right, these should sit near
-        100% on rep count alone. A number well below 100 means you used more weight on the left —
-        which is worth noticing, not panicking about. Narrowing over months is the goal, not a
-        perfect score on any one day.</p></div>`;
+  const all = gapTests();
+  const last = all.length ? all[all.length-1].date : null;
+  const days = last ? Math.round((new Date(today())-new Date(last))/86400000) : null;
+
+  const results = uni.map(id=>{
+    const ts = all.filter(t=>t.gap.ex===id);
+    if(!ts.length) return "";
+    const L = EX[id].lead||"R";
+    const rows = ts.map((t,i)=>{
+      const g = t.gap, pct = g.strong ? Math.round(g.weak/g.strong*100) : 0;
+      const prevW = i ? ts[i-1].gap.weight : g.weight;
+      return `<tr><td class="tiny">${esc(t.date)}</td>
+        <td class="num mono">${g.weight}${g.weight!==prevW?' <span class="pill">new wt</span>':""}</td>
+        <td class="num mono">${g.weak}</td><td class="num mono">${g.strong}</td>
+        <td class="num mono" style="color:${pct>=95?"var(--good)":"var(--acc)"}">${pct}%</td>
+        <td><button class="sm ghost" onclick="delSession('${t.id}')">✕</button></td></tr>`;
+    }).join("");
+    let trend = "";
+    if(ts.length>1){
+      const a=ts[0].gap, b=ts[ts.length-1].gap;
+      if(a.weight===b.weight){
+        const d=(b.strong-b.weak)-(a.strong-a.weak);
+        trend = d<0 ? `Gap narrowed by ${-d} rep${-d===1?"":"s"} since your first test.`
+              : d>0 ? `Gap widened by ${d} rep${d===1?"":"s"} since your first test.`
+              : `Gap unchanged since your first test.`;
+      } else trend = "Weight changed between first and latest test, so compare the percentages, not raw reps.";
+    }
+    return `<div class="card"><h3>${esc(EX[id].n)}</h3>
+      <table><thead><tr><th>Date</th><th class="num">lb</th>
+        <th class="num">${nm(L)}</th><th class="num">${nm(L==="R"?"L":"R")}</th>
+        <th class="num">Weak %</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      ${trend?`<p class="tiny muted" style="margin:10px 0 0">${trend}</p>`:""}</div>`;
+  }).join("");
+
+  return `<h1>Gap Test</h1>
+    <p class="tiny muted">Training hides the gap on purpose, so measure it separately every 4–6 weeks.
+      ${days==null?"No tests yet.":`Last test ${days} day${days===1?"":"s"} ago.`}</p>
+    ${flash?`<div class="${flash.k}">${esc(flash.m)}</div>`:""}
+    <div class="card">
+      <h3>Log a test</h3>
+      <select onchange="setGapEx(this.value)" style="margin-bottom:10px">
+        ${uni.map(id=>`<option value="${id}" ${id===gapEx?"selected":""}>${esc(EX[id].n)}${
+          GAP_SUGGEST.includes(id)?" ★":""}</option>`).join("")}
+      </select>
+      <input id="gw" type="number" inputmode="decimal" placeholder="Weight per dumbbell (lb)"
+        value="${lastW}" style="margin-bottom:8px">
+      <div class="row" style="flex-wrap:nowrap">
+        <input id="gweak" class="grow" type="number" inputmode="numeric" placeholder="${nm(lead)} reps">
+        <input id="gstrong" class="grow" type="number" inputmode="numeric" placeholder="${nm(other)} reps">
+      </div>
+      <button class="primary" style="width:100%;margin-top:10px" onclick="saveGap()">Save test</button>
+      <div class="info" style="margin-top:12px">
+        <b>How to run it</b>
+        <ul>
+          <li>${nm(lead)} side first, while fresh. Rest 2–3 minutes, then the ${nm(other).toLowerCase()}.</li>
+          <li>Pick a weight your weak side can do about 8–12 times, and <b>use the same weight every test</b> —
+            otherwise the numbers don't compare.${lastW?` Last time you used ${lastW} lb.`:""}</li>
+          <li>Go to technical failure: stop at the last rep you can do with clean form. No grinding.</li>
+          <li>Do it at the start of a session, before that lift's normal sets.</li>
+          <li>★ marks the two worth testing for you: right pec and right biceps.</li>
+        </ul>
+      </div>
+    </div>
+    ${results}`;
 }
 
+window.setGapEx = v => { gapEx = v; render(); };
+
+window.saveGap = async () => {
+  const w = Number(document.getElementById("gw").value);
+  const weak = Number(document.getElementById("gweak").value);
+  const strong = Number(document.getElementById("gstrong").value);
+  if(!w || !weak || !strong){ flash={k:"err",m:"Enter the weight and both rep counts."}; render(); return; }
+  try{
+    await setDoc(doc(db,"sessions",`${today()}_gap_${gapEx}`),
+      { date:today(), day:"gap", entries:{},
+        gap:{ ex:gapEx, weight:w, weak, strong, weakSide:EX[gapEx].lead||"R" },
+        at:new Date().toISOString() });
+    flash={k:"ok",m:"Test saved."};
+  }catch(e){ flash={k:"err",m:"Save failed: "+e.message}; }
+  render();
+};
+
 function renderHistory(){
-  if(!sessions.length) return `<h1>History</h1><div class="card muted">Nothing logged yet.</div>`;
-  return `<h1>History</h1>` + sessions.slice(0,30).map(s=>{
+  const ws = sessions.filter(s=>s.day!=="gap");
+  if(!ws.length) return `<h1>History</h1><div class="card muted">Nothing logged yet.</div>`;
+  return `<h1>History</h1>` + ws.slice(0,30).map(s=>{
     const day = DAYS.find(d=>d.id===s.day);
     const n = Object.keys(s.entries||{}).length;
     const vol = Object.values(s.entries||{}).flat()
@@ -482,8 +580,38 @@ function renderHistory(){
 /* ============================================================
    ACTIONS
    ============================================================ */
+/* In-progress workouts live on the device, not in memory and not in Firestore.
+   A phone locking between sets used to wipe everything logged so far. This also
+   means a workout survives losing signal — nothing needs the network until you
+   press Finish. */
+const DRAFT_KEY = "lift_draft";
+
+function saveDraft(){
+  try{
+    if(!Object.keys(draft).length){ localStorage.removeItem(DRAFT_KEY); return; }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ date:today(), day:dayId, draft }));
+  }catch(e){ /* private mode or full storage — the workout still runs, just isn't recoverable */ }
+}
+
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    // Only restore today's workout. Yesterday's half-finished session shouldn't
+    // reappear and get saved onto today's date.
+    if(d.date !== today()){ localStorage.removeItem(DRAFT_KEY); return; }
+    draft = d.draft || {};
+    dayId = d.day || dayId;
+  }catch(e){ localStorage.removeItem(DRAFT_KEY); }
+}
+
 window.go = k => { tab=k; render(); };
-window.setDay = d => { dayId=d; draft={}; render(); };
+window.setDay = d => {
+  if(d!==dayId && Object.keys(draft).length &&
+     !confirm("You have sets logged that aren't saved. Switching days will discard them. Continue?")) return;
+  dayId=d; draft={}; saveDraft(); render();
+};
 window.toggleInfo = id => { openInfo[id]=!openInfo[id]; render(); };
 window.skipRest = () => { restEnd=0; renderRest(); };
 
@@ -492,6 +620,25 @@ window.unlock = () => {
   if(v !== PASSCODE){ alert("Wrong passcode"); return; }
   authed = true; localStorage.setItem("lift_ok","1"); start();
 };
+
+// True once every set of every exercise in today's day has been logged.
+// Without this the timer starts after the final set and counts down at you
+// while you're putting the dumbbells away.
+function dayDone(){
+  const day = DAYS.find(d=>d.id===dayId);
+  if(!day) return false;
+  return day.ex.every(id=>{
+    const e = EX[id];
+    const lead = e.lead || "R";
+    const sides = e.uni ? [lead, lead==="R"?"L":"R"] : ["-"];
+    const got = draft[id]||[];
+    return sides.every(sd=>{
+      const n = (sd===lead && e.extraRight) ? e.sets+1 : e.sets;
+      for(let k=0;k<n;k++) if(!got.some(g=>g.side===sd && g.set===k)) return false;
+      return true;
+    });
+  });
+}
 
 window.logSet = (exId, side, i) => {
   const e = EX[exId];
@@ -502,13 +649,15 @@ window.logSet = (exId, side, i) => {
   draft[exId] = draft[exId]||[];
   draft[exId].push({ side, set:i, weight:Number(weight)||0, reps:Number(reps) });
   const isFirstTwo = DAYS.find(d=>d.id===dayId).ex.indexOf(exId) < 2;
-  restEnd = Date.now() + (isFirstTwo?90:60)*1000;
+  restEnd = dayDone() ? 0 : Date.now() + (isFirstTwo?90:60)*1000;
+  saveDraft();
   render();
 };
 
 window.undoSet = (exId, side, i) => {
   draft[exId] = (draft[exId]||[]).filter(g=>!(g.side===side&&g.set===i));
   if(!draft[exId].length) delete draft[exId];
+  saveDraft();
   render();
 };
 
@@ -517,7 +666,8 @@ window.saveSession = async () => {
   try{
     await setDoc(doc(db,"sessions",id), { date:today(), day:dayId, entries:draft,
       at:new Date().toISOString() });
-    draft = {}; flash={k:"ok",m:"Workout saved."};
+    draft = {}; saveDraft();
+    flash={k:"ok",m:"Workout saved."};
     restEnd=0; render();
   }catch(e){ flash={k:"err",m:"Save failed: "+e.message}; render(); }
 };
@@ -544,6 +694,7 @@ function start(){
   render();
 }
 
+loadDraft();
 if(localStorage.getItem("lift_ok")==="1") authed = true;
 if(authed) start(); else render();
 </script>
